@@ -2,6 +2,7 @@
   "expo": {
     "name": "HabitRank",
     "slug": "habitrank",
+    "scheme": "habitrank",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,6 +15,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.minephil.habitrank"
-    }
+    },
+    "plugins": ["expo-router"]
   }
 }
