@@ -14,16 +14,16 @@ Aktuell: Solo-Projekt für persönlichen Gebrauch. Später eventuell für andere
 
 ## Tech Stack
 
-| Bereich | Technologie |
-|---|---|
-| Sprache | TypeScript |
-| Framework | React Native + Expo |
-| Navigation | Expo Router (file-based) |
-| Lokale DB | AsyncStorage (einfach) → später SQLite (expo-sqlite) |
-| Styling | StyleSheet API (kein externes UI-Framework) |
-| Testing | Jest + React Native Testing Library |
-| Linting | ESLint + Prettier |
-| Versionskontrolle | Git + GitHub |
+| Bereich           | Technologie                                          |
+| ----------------- | ---------------------------------------------------- |
+| Sprache           | TypeScript                                           |
+| Framework         | React Native + Expo                                  |
+| Navigation        | Expo Router (file-based)                             |
+| Lokale DB         | AsyncStorage (einfach) → später SQLite (expo-sqlite) |
+| Styling           | StyleSheet API (kein externes UI-Framework)          |
+| Testing           | Jest + React Native Testing Library                  |
+| Linting           | ESLint + Prettier                                    |
+| Versionskontrolle | Git + GitHub                                         |
 
 ---
 
@@ -77,27 +77,27 @@ habitrank/
 export type HabitFrequency = 'daily' | 'weekly';
 
 export interface Habit {
-  id: string;                   // UUID
+  id: string; // UUID
   name: string;
-  icon: string;                 // Tabler Icon Name, z.B. "run"
+  icon: string; // Tabler Icon Name, z.B. "run"
   frequency: HabitFrequency;
   reminderEnabled: boolean;
-  reminderTime?: string;        // "HH:MM" Format, z.B. "20:00"
-  createdAt: string;            // ISO-Datum
-  archivedAt?: string;          // gesetzt wenn "gelöscht" — nie wirklich löschen!
+  reminderTime?: string; // "HH:MM" Format, z.B. "20:00"
+  createdAt: string; // ISO-Datum
+  archivedAt?: string; // gesetzt wenn "gelöscht" — nie wirklich löschen!
 }
 
 export interface HabitLog {
   id: string;
   habitId: string;
-  completedAt: string;          // ISO-Datum des Abhakens
-  date: string;                 // "YYYY-MM-DD" — der Tag für den es zählt
+  completedAt: string; // ISO-Datum des Abhakens
+  date: string; // "YYYY-MM-DD" — der Tag für den es zählt
 }
 
 export interface RPState {
   currentRP: number;
-  daysUnderFloor: number;       // Für Soft-Abstieg Logik (0–3)
-  lastUpdatedDate: string;      // "YYYY-MM-DD"
+  daysUnderFloor: number; // Für Soft-Abstieg Logik (0–3)
+  lastUpdatedDate: string; // "YYYY-MM-DD"
 }
 ```
 
@@ -111,28 +111,28 @@ export interface RPState {
 // src/constants/ranks.ts
 
 export const RANKS = [
-  { name: 'Bronze',     floor: 0,    ceil: 49   },
-  { name: 'Silver',     floor: 50,   ceil: 149  },
-  { name: 'Gold',       floor: 150,  ceil: 349  },
-  { name: 'Platin',     floor: 350,  ceil: 649  },
-  { name: 'Diamond',    floor: 650,  ceil: 999  },
-  { name: 'Master',     floor: 1000, ceil: 1499 },
-  { name: 'Challenger', floor: 1500, ceil: 99999},
+  { name: 'Bronze', floor: 0, ceil: 49 },
+  { name: 'Silver', floor: 50, ceil: 149 },
+  { name: 'Gold', floor: 150, ceil: 349 },
+  { name: 'Platin', floor: 350, ceil: 649 },
+  { name: 'Diamond', floor: 650, ceil: 999 },
+  { name: 'Master', floor: 1000, ceil: 1499 },
+  { name: 'Challenger', floor: 1500, ceil: 99999 },
 ] as const;
 ```
 
 ### RP-Mechanik
 
-| Aktion | RP |
-|---|---|
-| Habit erledigt (täglich) | +1 |
-| Habit erledigt (wöchentlich) | +3 |
-| Alle Habits des Tages erledigt | +5 Bonus |
-| Streak 7–29 Tage | ×1.5 Multiplikator |
-| Streak 30+ Tage | ×2 Multiplikator |
-| Habit verpasst (täglich) | −1 |
-| Kein einziger Habit heute | −5 |
-| Streak gebrochen | −3 einmalig |
+| Aktion                         | RP                 |
+| ------------------------------ | ------------------ |
+| Habit erledigt (täglich)       | +1                 |
+| Habit erledigt (wöchentlich)   | +3                 |
+| Alle Habits des Tages erledigt | +5 Bonus           |
+| Streak 7–29 Tage               | ×1.5 Multiplikator |
+| Streak 30+ Tage                | ×2 Multiplikator   |
+| Habit verpasst (täglich)       | −1                 |
+| Kein einziger Habit heute      | −5                 |
+| Streak gebrochen               | −3 einmalig        |
 
 ### Soft- vs. Hard-Abstieg
 
@@ -153,6 +153,7 @@ export const RANKS = [
 ## Screen-Übersicht
 
 ### Homescreen (`app/(tabs)/index.tsx`)
+
 - Datum oben links, Plus-Button oben rechts
 - RankCard: Rang-Badge, Name, RP, Fortschrittsbalken
 - Habits getrennt in "Täglich" und "Wöchentlich" Sektionen
@@ -160,6 +161,7 @@ export const RANKS = [
 - Bottom Navigation: Heute / Statistik / Rang / Einstellungen
 
 ### Statistik (`app/(tabs)/stats.tsx`)
+
 - 4 Stat-Karten: Längster Streak, Diese Woche %, Aktuelle RP, Tage aktiv
 - Streak-Grid: 28 Tage × alle Habits (scrollbar bei vielen Habits)
 - Completion-Rate Balken pro Habit
@@ -167,11 +169,13 @@ export const RANKS = [
 - Gesamte Seite scrollbar via ScrollView
 
 ### Rang (`app/(tabs)/rank.tsx`)
+
 - Aktueller Rang gross mit Icon, Name, RP, Fortschrittsbalken
 - Abstiegsschutz-Banner (grün = sicher, gelb = Warnung, rot = droht Abstieg)
 - Vollständige Rang-Liste: Bronze → Challenger mit Status (erreicht / aktuell / gesperrt)
 
 ### Habit erstellen (`app/habit/create.tsx`)
+
 - Textfeld für Name
 - Frequenz-Auswahl: Täglich / Wöchentlich (2 Karten)
 - Icon-Grid (12 Icons zur Auswahl)
@@ -179,6 +183,7 @@ export const RANKS = [
 - Zurück-Pfeil + "Speichern" Button
 
 ### Einstellungen (`app/(tabs)/settings.tsx`)
+
 - Habit-Liste mit Bearbeiten/Löschen (Löschen = archivieren, nie wirklich löschen)
 - Benachrichtigungen: Tägliche Zusammenfassung, Abstiegs-Warnung
 - Darstellung: Erscheinungsbild (System/Hell/Dunkel), Wochenstart (Mo/So)
@@ -189,12 +194,14 @@ export const RANKS = [
 ## Wichtige Implementierungs-Regeln
 
 ### Allgemein
+
 - **TypeScript strict mode** immer aktiviert (`"strict": true` in tsconfig.json)
 - Keine `any` Types verwenden — lieber `unknown` mit Type Guard
 - Funktionale Komponenten + React Hooks, keine Class Components
 - Alle Texte auf **Deutsch** (App ist für deutschsprachigen Nutzer)
 
 ### Datenhaltung
+
 - Habits **niemals wirklich löschen** — immer `archivedAt` setzen
 - Alle Daten mit `AsyncStorage` unter klar benannten Keys speichern:
   - `@habitrank/habits` — Habit[]
@@ -204,16 +211,19 @@ export const RANKS = [
 - Datum immer als `"YYYY-MM-DD"` String speichern, niemals als Date-Objekt in Storage
 
 ### RP-Berechnung
+
 - RP-Berechnung **täglich einmal** beim App-Start ausführen (für den Vortag)
 - `lastUpdatedDate` prüfen um Doppel-Berechnungen zu vermeiden
 - Streak-Multiplikator auf den gerundeten Ganzzahlwert runden
 
 ### Benachrichtigungen
+
 - Expo Notifications API (`expo-notifications`) verwenden
 - Immer nach Permission fragen bevor Notifications geplant werden
 - Bei Ablehnung: graceful degradation, kein Crash
 
 ### Styling
+
 - Kein externes UI-Framework (keine NativeBase, keine Tamagui)
 - React Native `StyleSheet.create()` für alle Styles
 - Gemeinsame Farben/Abstände in `src/constants/theme.ts` definieren
@@ -224,6 +234,7 @@ export const RANKS = [
 ## Git-Workflow
 
 ### Branch-Strategie
+
 ```
 main          — stable, läuft auf TestFlight
 develop       — aktuelle Entwicklung
@@ -232,6 +243,7 @@ fix/xyz       — Bugfixes
 ```
 
 ### Commit-Konventionen
+
 ```
 feat: Habit-Erstellen Screen implementiert
 fix: RP-Berechnung bei Wochenwechsel korrigiert
