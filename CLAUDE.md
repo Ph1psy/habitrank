@@ -32,34 +32,35 @@ Aktuell: Solo-Projekt für persönlichen Gebrauch. Später eventuell für andere
 ```
 habitrank/
 ├── app/                        # Expo Router — Screens
+│   ├── _layout.tsx             # ✅ Root Layout (Stack)
 │   ├── (tabs)/
-│   │   ├── index.tsx           # Homescreen (Habits + Rang)
-│   │   ├── stats.tsx           # Statistik-Screen
-│   │   ├── rank.tsx            # Rang-Screen
-│   │   └── settings.tsx        # Einstellungs-Screen
+│   │   ├── _layout.tsx         # ✅ Tab Navigation
+│   │   ├── index.tsx           # ✅ Homescreen (aktuell leer)
+│   │   ├── stats.tsx           # ✅ Statistik-Screen (aktuell leer)
+│   │   ├── rank.tsx            # ✅ Rang-Screen (aktuell leer)
+│   │   └── settings.tsx        # ✅ Einstellungs-Screen (aktuell leer)
 │   └── habit/
-│       └── create.tsx          # Habit erstellen/bearbeiten
+│       └── create.tsx          # 🔲 Habit erstellen/bearbeiten
 ├── src/
-│   ├── components/             # Wiederverwendbare UI-Komponenten
-│   │   ├── RankCard.tsx        # Rang + RP Fortschrittsanzeige
-│   │   ├── HabitItem.tsx       # Einzelner Habit in der Liste
-│   │   ├── StreakGrid.tsx      # 28-Tage Streak Kalender
-│   │   └── ProgressBar.tsx     # Generische Fortschrittsleiste
+│   ├── components/             # 🔲 Wiederverwendbare UI-Komponenten
+│   │   ├── RankCard.tsx
+│   │   ├── HabitItem.tsx
+│   │   ├── StreakGrid.tsx
+│   │   └── ProgressBar.tsx
 │   ├── hooks/                  # Custom React Hooks
-│   │   ├── useHabits.ts        # Habit-Daten lesen/schreiben
-│   │   └── useRank.ts          # RP + Rang berechnen
+│   │   ├── useHabits.ts        # ✅ Habit-Daten lesen/schreiben
+│   │   └── useRank.ts          # 🔲 RP + Rang berechnen
 │   ├── services/               # Datenzugriff / Business Logic
-│   │   ├── storage.ts          # AsyncStorage Wrapper
-│   │   ├── habitService.ts     # Habit CRUD
-│   │   └── rpService.ts        # RP-Berechnung, Auf-/Abstieg
+│   │   ├── habitService.ts     # ✅ Habit CRUD
+│   │   ├── logService.ts       # ✅ HabitLog CRUD
+│   │   └── rpService.ts        # ✅ RP-Berechnung, Auf-/Abstieg
 │   ├── types/                  # TypeScript Typdefinitionen
-│   │   └── index.ts
-│   └── constants/              # Feste Werte (Rang-Grenzen etc.)
-│       └── ranks.ts
+│   │   └── index.ts            # ✅ Habit, HabitLog, RPState
+│   └── constants/              # Feste Werte
+│       └── ranks.ts            # ✅ Rang-Grenzen + getRankForRP()
 ├── docs/                       # Projektdokumentation
-│   ├── architecture.md         # Technische Entscheidungen
-│   ├── design.md               # Screen-Designs (Mockups)
-│   └── rank-system.md          # Rang- und RP-Logik
+│   ├── architecture.md
+│   └── rank-system.md
 ├── assets/                     # Icons, Bilder
 ├── CLAUDE.md                   # Diese Datei
 ├── app.json                    # Expo Konfiguration
@@ -274,8 +275,8 @@ eas build --platform ios --profile preview   # TestFlight Build
 ## Entwicklungsphasen
 
 - [x] Phase 0: Design und Planung abgeschlossen
-- [ ] Phase 1: TypeScript/React Native Grundlagen lernen + Expo Setup
-- [ ] Phase 2: MVP — Habit-Liste, Abhaken, lokale Speicherung
+- [x] Phase 1: TypeScript/React Native Grundlagen lernen + Expo Setup
+- [ ] Phase 2: MVP — Habit-Liste, Abhaken, lokale Speicherung (in Arbeit)
 - [ ] Phase 3: Rang-System — RP-Berechnung, Soft/Hard-Abstieg, Streak
 - [ ] Phase 4: Polish — Design, Animationen, Benachrichtigungen, TestFlight
 
@@ -283,6 +284,13 @@ eas build --platform ios --profile preview   # TestFlight Build
 
 ## Bekannte offene Entscheidungen
 
-- Wann genau wird die tägliche RP-Berechnung ausgelöst? (App-Start vs. Mitternacht)
+- ~~Wann genau wird die tägliche RP-Berechnung ausgelöst?~~ → **beim App-Start für den Vortag** (`lastUpdatedDate` verhindert Doppelberechnung)
 - Wie werden wöchentliche Habits in der Statistik visualisiert?
 - Daten-Export Format: JSON oder CSV?
+
+## Wichtige technische Hinweise
+
+- `npm install --legacy-peer-deps` verwenden (nicht `npm install`) — SDK 54 hat Peer-Dependency-Konflikte
+- Expo Go auf dem iPhone läuft mit SDK 54 — kein Development Build nötig
+- Beim Aufstieg werden überschüssige RP mitgenommen (kein Reset auf floor)
+- Beim Abstieg wird auf den `floor` des neuen Rangs gesetzt (bewusste Entscheidung)
