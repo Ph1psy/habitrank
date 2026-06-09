@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Habit, HabitFrequency } from '../types';
+import { generateId } from '../utils/id';
 
 const STORAGE_KEY = '@habitrank/habits';
 
@@ -29,7 +30,7 @@ export async function createHabit(
   const habits = await getHabits();
 
   const newHabit: Habit = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name,
     icon,
     frequency,

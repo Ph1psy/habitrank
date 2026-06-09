@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { HabitLog } from '../types';
+import { generateId } from '../utils/id';
 
 const STORAGE_KEY = '@habitrank/logs';
 
@@ -31,7 +32,7 @@ export async function completeHabit(habitId: string, date: string): Promise<void
   if (alreadyCompleted) return;
 
   const newLog: HabitLog = {
-    id: crypto.randomUUID(),
+    id: generateId(),
     habitId,
     completedAt: new Date().toISOString(),
     date,
@@ -44,4 +45,30 @@ export async function uncompleteHabit(habitId: string, date: string): Promise<vo
   const logs = await getLogs();
   const updated = logs.filter((log) => !(log.habitId === habitId && log.date === date));
   await saveLogs(updated);
+}
+
+export async function getAllLogs(): Promise<HabitLog[]> {
+  return getLogs();
+}
+
+export async function getLogsInRange(startDate: string, endDate: string): Promise<HabitLog[]> {
+  const logs = await getLogs();
+  return logs.filter((l) => l.date >= startDate && l.date <= endDate);
+}
+
+// Counts consecutive completed days ending on upToDate (inclusive).
+export async function getStreak(habitId: string, upToDate: string): Promise<number> {
+  const logs = await getLogs();
+  const completedDates = new Set(logs.filter((l) => l.habitId === habitId).map((l) => l.date));
+
+  let streak = 0;
+  // Use noon to avoid UTC/local-time boundary issues when subtracting days.
+  const current = new Date(upToDate + 'T12:00:00');
+
+  while (completedDates.has(current.toISOString().split('T')[0])) {
+    streak++;
+    current.setDate(current.getDate() - 1);
+  }
+
+  return streak;
 }

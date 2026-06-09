@@ -23,3 +23,9 @@ export interface RPState {
   daysUnderFloor: number;
   lastUpdatedDate: string;
 }
+
+export interface AppSettings {
+  weekStartsOnMonday: boolean;
+  notifyDailySummary: boolean;
+  notifyDemotionWarning: boolean;
+}
