@@ -2,8 +2,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RANKS, getRankForRP } from '../constants/ranks';
 import { RPState } from '../types';
+import { getWeekStart, isLastDayOfWeek } from '../utils/date';
 import { getAllHabits } from './habitService';
-import { getLogsForDate, getLogsForHabit } from './logService';
+import { getLogsForDate, getLogsForHabit, getLogsInRange } from './logService';
+import { getSettings } from './settingsService';
 
 const STORAGE_KEY = '@habitrank/rp';
 const MIN_RP = 0;
@@ -56,8 +58,10 @@ export async function calculateDailyRP(date: string): Promise<void> {
 
   if (state.lastUpdatedDate === date) return;
 
+  const settings = await getSettings();
   const habits = await getAllHabits();
   const dailyHabits = habits.filter((h) => h.frequency === 'daily');
+  const weeklyHabits = habits.filter((h) => h.frequency === 'weekly');
   const logs = await getLogsForDate(date);
   const completedIds = new Set(logs.map((log) => log.habitId));
 
@@ -86,6 +90,18 @@ export async function calculateDailyRP(date: string): Promise<void> {
   if (allCompleted) rpDelta += 5;
   if (!anyCompleted && dailyHabits.length > 0) rpDelta -= 5;
   if (streakBroken) rpDelta -= 3;
+
+  // Wöchentliche Habits werden nur am letzten Tag der Woche ausgewertet,
+  // da sie einmal pro Woche (nicht pro Tag) erledigt werden können.
+  if (weeklyHabits.length > 0 && isLastDayOfWeek(date, settings.weekStartsOnMonday)) {
+    const weekStart = getWeekStart(date, settings.weekStartsOnMonday);
+    const weekLogs = await getLogsInRange(weekStart, date);
+    const completedWeeklyIds = new Set(weekLogs.map((log) => log.habitId));
+
+    for (const habit of weeklyHabits) {
+      rpDelta += completedWeeklyIds.has(habit.id) ? 3 : -2;
+    }
+  }
 
   let newRP = Math.max(MIN_RP, state.currentRP + rpDelta);
 

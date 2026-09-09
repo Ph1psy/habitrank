@@ -1,11 +1,15 @@
 import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Habit, AppSettings } from '../../src/types';
 import { getAllHabits, archiveHabit } from '../../src/services/habitService';
+import {
+  rescheduleHabitReminders,
+  setDailySummaryEnabled,
+} from '../../src/services/notificationService';
 import {
   getSettings,
   saveSettings,
@@ -87,6 +91,7 @@ export default function SettingsScreen() {
         onPress: async () => {
           await archiveHabit(id);
           setHabits((prev) => prev.filter((h) => h.id !== id));
+          await rescheduleHabitReminders(await getAllHabits());
         },
       },
     ]);
@@ -96,6 +101,10 @@ export default function SettingsScreen() {
     const updated = { ...settings, [key]: value };
     setSettings(updated);
     await saveSettings(updated);
+
+    if (key === 'notifyDailySummary') {
+      await setDailySummaryEnabled(value as boolean);
+    }
   }
 
   async function handleExport() {
@@ -147,7 +156,10 @@ export default function SettingsScreen() {
           return (
             <View key={habit.id}>
               {i > 0 && <Divider />}
-              <View style={styles.row}>
+              <Pressable
+                onPress={() => router.push(`/habit/create?id=${habit.id}`)}
+                style={({ pressed }) => [styles.row, pressed && styles.pressed]}
+              >
                 <View style={styles.habitIconCircle}>
                   <Ionicons name={iconName} size={16} color={Colors.textSecondary} />
                 </View>
@@ -166,7 +178,7 @@ export default function SettingsScreen() {
                 >
                   <Ionicons name="trash-outline" size={18} color={Colors.danger} />
                 </Pressable>
-              </View>
+              </Pressable>
             </View>
           );
         })}

@@ -20,6 +20,7 @@ Aktuell: Solo-Projekt für persönlichen Gebrauch. Später eventuell für andere
 | Framework         | React Native + Expo SDK 54                  |
 | Navigation        | Expo Router (file-based)                    |
 | Gestures          | react-native-gesture-handler 2.28.0         |
+| Notifications     | expo-notifications (lokal, kein Push)       |
 | Lokale DB         | AsyncStorage → später SQLite (expo-sqlite)  |
 | Styling           | StyleSheet API (kein externes UI-Framework) |
 | Testing           | Jest + React Native Testing Library         |
@@ -41,7 +42,7 @@ habitrank/
 │   │   ├── rank.tsx            # ✅ Rang-Screen
 │   │   └── settings.tsx        # ✅ Einstellungs-Screen
 │   └── habit/
-│       └── create.tsx          # ✅ Habit erstellen
+│       └── create.tsx          # ✅ Habit erstellen + bearbeiten (?id=)
 ├── src/
 │   ├── components/
 │   │   ├── RankCard.tsx        # ✅ Hero-Layout mit Emoji, RP, Fortschrittsbalken
@@ -51,10 +52,11 @@ habitrank/
 │   │   ├── useRank.ts          # ✅ RP + Rang + Fortschritt
 │   │   └── useStats.ts         # ✅ Statistik-Daten (Streak, %, RP, Grid)
 │   ├── services/
-│   │   ├── habitService.ts     # ✅ Habit CRUD (createHabit, archiveHabit, getAllHabits)
+│   │   ├── habitService.ts     # ✅ Habit CRUD (create/update/archive, getHabitById)
 │   │   ├── logService.ts       # ✅ HabitLog CRUD + getStreak + getLogsInRange
-│   │   ├── rpService.ts        # ✅ RP-Berechnung, Soft/Hard-Abstieg
-│   │   └── settingsService.ts  # ✅ AppSettings lesen/schreiben, Export, Reset
+│   │   ├── rpService.ts        # ✅ RP-Berechnung täglich + wöchentlich, Soft/Hard-Abstieg
+│   │   ├── settingsService.ts  # ✅ AppSettings lesen/schreiben, Export, Reset
+│   │   └── notificationService.ts # ✅ Habit-Erinnerungen, Tages-Zusammenfassung, Abstiegs-Warnung
 │   ├── types/
 │   │   └── index.ts            # ✅ Habit, HabitLog, RPState, AppSettings
 │   ├── constants/
@@ -62,7 +64,7 @@ habitrank/
 │   │   ├── theme.ts            # ✅ Colors, Spacing, Radius
 │   │   └── icons.ts            # ✅ HABIT_ICON_MAP (icon-key → Ionicons-Name)
 │   └── utils/
-│       ├── date.ts             # ✅ getLocalDateString, getYesterday, getWeekStart
+│       ├── date.ts             # ✅ getLocalDateString, getYesterday, getWeekStart, isLastDayOfWeek
 │       └── id.ts               # ✅ generateId() — Hermes-kompatibler UUID-Ersatz
 ├── docs/
 │   ├── architecture.md
@@ -159,10 +161,10 @@ Rang-Emojis (definiert inline in RankCard + rank.tsx):
 
 ### Wochenlogik für wöchentliche Habits
 
-- Woche = Montag bis Sonntag (konfigurierbar via `AppSettings.weekStartsOnMonday`)
+- Woche = Montag bis Sonntag, oder Sonntag bis Samstag wenn `AppSettings.weekStartsOnMonday = false`
 - Ein wöchentliches Habit kann pro Woche genau einmal abgehakt werden
-- **Noch nicht implementiert:** −2 RP am Sonntag für nicht erledigte wöchentliche Habits
-- **Noch nicht implementiert:** `getWeekStart()` ignoriert aktuell noch die Einstellung — immer Montag
+- Auswertung passiert am letzten Tag der Woche (in `calculateDailyRP`, via `isLastDayOfWeek()`): erledigt → +3 RP, nicht erledigt → −2 RP
+- `getWeekStart(date, weekStartsOnMonday)` und `isLastDayOfWeek(date, weekStartsOnMonday)` in `src/utils/date.ts` respektieren die Einstellung überall (Home, Statistik, RP-Berechnung)
 
 ---
 
@@ -191,17 +193,18 @@ Rang-Emojis (definiert inline in RankCard + rank.tsx):
 - Abstiegs-Banner: grün (sicher) / gelb (1 Tag) / rot (2 Tage, droht Abstieg)
 - Rang-Liste Challenger→Bronze: Aktuell / ✓ erreicht / – gesperrt
 
-### Habit erstellen (`app/habit/create.tsx`) ✅
+### Habit erstellen/bearbeiten (`app/habit/create.tsx`) ✅
 
 - Textfeld, Frequenz-Karten, 4-spaltiges Icon-Grid (12 Icons), Erinnerungs-Toggle + Zeit
-- Validierung, `createHabit()`, `router.back()`
-- **Noch nicht implementiert:** Habit bearbeiten (Edit-Modus)
+- Edit-Modus via `?id=<habitId>` Query-Param: lädt bestehendes Habit, füllt Formular vor, `updateHabit()` statt `createHabit()`
+- Nach dem Speichern: `rescheduleHabitReminders()` — plant Erinnerungs-Notifications neu
+- Validierung, `router.back()`
 
 ### Einstellungen (`app/(tabs)/settings.tsx`) ✅
 
-- Habit-Liste: Icon, Name, Frequenz, Löschen (archivieren, mit Bestätigungs-Alert)
-- Benachrichtigungen: Toggles für Zusammenfassung + Abstiegs-Warnung (gespeichert, noch nicht aktiv)
-- Darstellung: Wochenstart Mo/So als Pill-Auswahl
+- Habit-Liste: Icon, Name, Frequenz — Zeile antippen → Bearbeiten, Papierkorb-Icon → Löschen (archivieren, mit Bestätigungs-Alert)
+- Benachrichtigungen: Toggles für Zusammenfassung + Abstiegs-Warnung — beide aktiv verkabelt via `notificationService.ts`
+- Darstellung: Wochenstart Mo/So als Pill-Auswahl — wirkt sich auf RP-Berechnung und Statistik aus
 - Daten: Export als JSON via iOS Share-Sheet, Alles zurücksetzen (mit Warnung)
 
 ---
@@ -232,6 +235,15 @@ Rang-Emojis (definiert inline in RankCard + rank.tsx):
 - RP-Berechnung **täglich einmal** beim App-Start (für den Vortag)
 - `lastUpdatedDate` prüfen um Doppel-Berechnungen zu vermeiden
 - Streak-Multiplikator wird auf Ganzzahl gerundet (`Math.round`)
+
+### Benachrichtigungen
+
+- `src/services/notificationService.ts` — nur lokale Notifications, kein Push/Backend
+- Permission-Anfrage einmal beim App-Start (`app/_layout.tsx`)
+- Habit-Erinnerungen: tägliche wiederkehrende Notification pro Habit (`SchedulableTriggerInputTypes.DAILY`), Identifier `habit-reminder-<habitId>` — bei jedem Create/Update/Archive komplett neu geplant (`rescheduleHabitReminders`)
+- Tägliche Zusammenfassung: statische Notification um 21:00 Uhr, an/aus über Einstellungen-Toggle — Inhalt ist statisch, da lokale Notifications keine Live-Daten zum Auslösungszeitpunkt laden können
+- Abstiegs-Warnung: sofortige (nicht geplante) Notification, ausgelöst beim App-Start wenn `daysUnderFloor >= 2` (1 Tag vor Hard-Abstieg) und Toggle aktiv ist
+- Expo Go unterstützt lokale Notifications weiterhin auf iOS und Android (nur Remote-Push wurde aus Expo Go entfernt)
 
 ### Gestures
 
@@ -296,14 +308,14 @@ eas build --platform ios --profile preview   # TestFlight Build
 - [x] Phase 0: Design und Planung abgeschlossen
 - [x] Phase 1: TypeScript/React Native Grundlagen lernen + Expo Setup
 - [x] Phase 2: MVP — alle Screens implementiert, Habits erstellen/abhaken, AsyncStorage
-- [ ] Phase 3: Rang-System vervollständigen
+- [x] Phase 3: Rang-System vervollständigt
   - [x] RP-Berechnung (täglich, idempotent)
   - [x] Soft/Hard-Abstieg
   - [x] Streak-Logik + Multiplikator
-  - [ ] Wöchentliche Habit-Strafe (−2 RP Sonntag)
-  - [ ] `getWeekStart()` auf `AppSettings.weekStartsOnMonday` reagieren lassen
-  - [ ] Habit bearbeiten (Edit-Screen)
-- [ ] Phase 4: Polish — Animationen, echte Benachrichtigungen, TestFlight
+  - [x] Wöchentliche Habit-Belohnung/-Strafe (+3 / −2 RP am letzten Tag der Woche)
+  - [x] `getWeekStart()` respektiert `AppSettings.weekStartsOnMonday`
+  - [x] Habit bearbeiten (Edit-Screen)
+- [ ] Phase 4: Polish — Animationen, echte Benachrichtigungen (Grundfunktion ✅, Feinschliff offen), TestFlight
 
 ---
 
@@ -312,7 +324,9 @@ eas build --platform ios --profile preview   # TestFlight Build
 - ~~Wann wird die tägliche RP-Berechnung ausgelöst?~~ → beim App-Start für den Vortag
 - ~~Daten-Export Format?~~ → JSON via iOS Share-Sheet
 - ~~Wie werden wöchentliche Habits in der Statistik visualisiert?~~ → gleich wie tägliche, aber Abschlussrate gegen max. 4 (statt 28)
-- Wöchentliche Habit-Strafe (−2 RP Sonntag) noch nicht in `rpService.ts` implementiert
-- `getWeekStart()` ignoriert noch `AppSettings.weekStartsOnMonday` (immer Montag)
-- Benachrichtigungs-Toggles in Einstellungen gespeichert, aber keine Expo-Notifications-Logik hinterlegt
-- Habit bearbeiten (Edit-Modus für bestehende Habits) noch nicht implementiert
+- ~~Wöchentliche Habit-Strafe~~ → implementiert (+3 / −2 RP am letzten Tag der Woche, siehe `rpService.ts`)
+- ~~`getWeekStart()` ignoriert Einstellung~~ → nimmt jetzt `weekStartsOnMonday` als Parameter
+- ~~Habit bearbeiten~~ → implementiert via `?id=` Query-Param in `create.tsx`
+- Tägliche Zusammenfassung hat statischen Text (kein dynamischer Inhalt möglich ohne Background-Task/Server)
+- Für echten Push (statt nur lokalen Notifications) wäre ein Development Build statt Expo Go nötig
+- Dark/Hell-Modus-Umschaltung in "Darstellung" ist geplant, aber noch nicht umgesetzt (Dark Mode ist hardcoded)

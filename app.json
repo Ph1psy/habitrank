@@ -16,6 +16,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.minephil.habitrank"
     },
-    "plugins": ["expo-router"]
+    "plugins": ["expo-router", "expo-notifications"]
   }
 }

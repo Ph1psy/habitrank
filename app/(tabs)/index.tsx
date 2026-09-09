@@ -4,11 +4,18 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { calculateDailyRP } from '../../src/services/rpService';
+import { getAllHabits } from '../../src/services/habitService';
+import {
+  rescheduleHabitReminders,
+  sendDemotionWarning,
+} from '../../src/services/notificationService';
+import { calculateDailyRP, getCurrentRPState } from '../../src/services/rpService';
+import { getSettings } from '../../src/services/settingsService';
 import { useRank } from '../../src/hooks/useRank';
 import { useTodayHabits } from '../../src/hooks/useTodayHabits';
 import { RankCard } from '../../src/components/RankCard';
 import { HabitItem } from '../../src/components/HabitItem';
+import { getRankForRP } from '../../src/constants/ranks';
 import { Colors, Spacing } from '../../src/constants/theme';
 import { getLocalDateString, getYesterday } from '../../src/utils/date';
 
@@ -35,9 +42,28 @@ export default function HomeScreen() {
     archive,
   } = useTodayHabits();
 
-  // Calculate yesterday's RP once on app start (idempotent via lastUpdatedDate check).
+  // Calculate yesterday's RP once on app start (idempotent via lastUpdatedDate check),
+  // reschedule habit reminders, and warn if a demotion is about to happen.
   useEffect(() => {
-    calculateDailyRP(getYesterday(today)).then(() => reloadRank());
+    async function init() {
+      await calculateDailyRP(getYesterday(today));
+      await reloadRank();
+
+      const [rpState, settings, habits] = await Promise.all([
+        getCurrentRPState(),
+        getSettings(),
+        getAllHabits(),
+      ]);
+
+      await rescheduleHabitReminders(habits);
+
+      if (settings.notifyDemotionWarning && rpState.daysUnderFloor >= 2) {
+        const rank = getRankForRP(rpState.currentRP);
+        const daysUntilDemotion = 3 - rpState.daysUnderFloor;
+        await sendDemotionWarning(rank.name, daysUntilDemotion);
+      }
+    }
+    init();
   }, []);
 
   // Reload data whenever the screen comes back into focus (e.g. after creating a habit).

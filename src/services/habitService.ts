@@ -20,6 +20,11 @@ export async function getAllHabits(): Promise<Habit[]> {
   return habits.filter((h) => h.archivedAt === undefined);
 }
 
+export async function getHabitById(id: string): Promise<Habit | undefined> {
+  const habits = await getHabits();
+  return habits.find((h) => h.id === id);
+}
+
 export async function createHabit(
   name: string,
   frequency: HabitFrequency,
@@ -41,6 +46,23 @@ export async function createHabit(
 
   await saveHabits([...habits, newHabit]);
   return newHabit;
+}
+
+export async function updateHabit(
+  id: string,
+  name: string,
+  frequency: HabitFrequency,
+  icon: string,
+  reminderEnabled: boolean,
+  reminderTime?: string
+): Promise<void> {
+  const habits = await getHabits();
+
+  const updated = habits.map((h) =>
+    h.id === id ? { ...h, name, frequency, icon, reminderEnabled, reminderTime } : h
+  );
+
+  await saveHabits(updated);
 }
 
 export async function archiveHabit(id: string): Promise<void> {

@@ -11,12 +11,19 @@ export function getYesterday(today: string): string {
   return getLocalDateString(d);
 }
 
-// Returns the Monday of the week containing the given date.
-// Configurable via the settings screen later (Mo vs. So as week start).
-export function getWeekStart(date: string): string {
+// Returns the first day of the week containing the given date.
+// weekStartsOnMonday kommt aus AppSettings (Standard: true).
+export function getWeekStart(date: string, weekStartsOnMonday: boolean = true): string {
   const d = new Date(date + 'T12:00:00');
-  const day = d.getDay(); // 0=Sunday
-  const daysBack = day === 0 ? 6 : day - 1;
+  const day = d.getDay(); // 0=Sunday ... 6=Saturday
+  const daysBack = weekStartsOnMonday ? (day === 0 ? 6 : day - 1) : day;
   d.setDate(d.getDate() - daysBack);
   return getLocalDateString(d);
+}
+
+// Prüft ob date der letzte Tag der Woche ist (Sonntag oder Samstag, je nach Einstellung).
+export function isLastDayOfWeek(date: string, weekStartsOnMonday: boolean = true): boolean {
+  const d = new Date(date + 'T12:00:00');
+  const day = d.getDay();
+  return weekStartsOnMonday ? day === 0 : day === 6;
 }

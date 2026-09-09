@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 import { getAllHabits } from '../services/habitService';
 import { getAllLogs, getLogsInRange } from '../services/logService';
 import { getCurrentRPState } from '../services/rpService';
+import { getSettings } from '../services/settingsService';
 import { HabitLog, Habit } from '../types';
 import { getLocalDateString, getWeekStart } from '../utils/date';
 
@@ -52,7 +53,6 @@ export function useStats() {
     setLoading(true);
 
     const today = getLocalDateString();
-    const weekStart = getWeekStart(today);
 
     // Letzten 28 Tage (ältester zuerst)
     const last28Days = Array.from({ length: 28 }, (_, i) => {
@@ -61,12 +61,15 @@ export function useStats() {
       return getLocalDateString(d);
     });
 
-    const [habits, allLogs, recentLogs, rpState] = await Promise.all([
+    const [habits, allLogs, recentLogs, rpState, settings] = await Promise.all([
       getAllHabits(),
       getAllLogs(),
       getLogsInRange(last28Days[0], today),
       getCurrentRPState(),
+      getSettings(),
     ]);
+
+    const weekStart = getWeekStart(today, settings.weekStartsOnMonday);
 
     // Bester aktueller Streak (höchster aktiver Streak unter allen Habits)
     const currentStreak = habits.reduce((max, h) => {

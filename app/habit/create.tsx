@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Dimensions,
   KeyboardAvoidingView,
@@ -12,11 +13,17 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { createHabit } from '../../src/services/habitService';
+import {
+  createHabit,
+  getAllHabits,
+  getHabitById,
+  updateHabit,
+} from '../../src/services/habitService';
+import { rescheduleHabitReminders } from '../../src/services/notificationService';
 import { HabitFrequency } from '../../src/types';
 import { Colors, Radius, Spacing } from '../../src/constants/theme';
 
@@ -44,6 +51,8 @@ const ICON_CELL_SIZE = Math.floor((SCREEN_WIDTH - Spacing.md * 2 - Spacing.sm * 
 
 export default function CreateHabitScreen() {
   const insets = useSafeAreaInsets();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const isEditMode = id !== undefined;
 
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
@@ -51,6 +60,22 @@ export default function CreateHabitScreen() {
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState('20:00');
   const [saving, setSaving] = useState(false);
+  const [loadingHabit, setLoadingHabit] = useState(isEditMode);
+
+  // Im Edit-Modus: bestehendes Habit laden und Formular vorausfüllen.
+  useEffect(() => {
+    if (!id) return;
+    getHabitById(id).then((habit) => {
+      if (habit) {
+        setName(habit.name);
+        setFrequency(habit.frequency);
+        setSelectedIcon(habit.icon);
+        setReminderEnabled(habit.reminderEnabled);
+        setReminderTime(habit.reminderTime ?? '20:00');
+      }
+      setLoadingHabit(false);
+    });
+  }, [id]);
 
   async function handleSave() {
     const trimmedName = name.trim();
@@ -66,15 +91,33 @@ export default function CreateHabitScreen() {
     }
 
     setSaving(true);
-    await createHabit(
-      trimmedName,
-      frequency,
-      selectedIcon,
-      reminderEnabled,
-      reminderEnabled ? reminderTime : undefined
-    );
+    const finalReminderTime = reminderEnabled ? reminderTime : undefined;
+
+    if (isEditMode && id) {
+      await updateHabit(
+        id,
+        trimmedName,
+        frequency,
+        selectedIcon,
+        reminderEnabled,
+        finalReminderTime
+      );
+    } else {
+      await createHabit(trimmedName, frequency, selectedIcon, reminderEnabled, finalReminderTime);
+    }
+
+    await rescheduleHabitReminders(await getAllHabits());
+
     setSaving(false);
     router.back();
+  }
+
+  if (loadingHabit) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 40 }} />
+      </View>
+    );
   }
 
   return (
@@ -87,7 +130,9 @@ export default function CreateHabitScreen() {
         <Pressable onPress={() => router.back()} style={styles.headerIconButton} hitSlop={8}>
           <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
         </Pressable>
-        <Text style={styles.headerTitle}>Habit erstellen</Text>
+        <Text style={styles.headerTitle}>
+          {isEditMode ? 'Habit bearbeiten' : 'Habit erstellen'}
+        </Text>
         <Pressable
           onPress={handleSave}
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
