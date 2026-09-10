@@ -17,7 +17,7 @@ Aktuell: Solo-Projekt für persönlichen Gebrauch. Später eventuell für andere
 | Bereich           | Technologie                                 |
 | ----------------- | ------------------------------------------- |
 | Sprache           | TypeScript                                  |
-| Framework         | React Native + Expo SDK 54                  |
+| Framework         | React Native + Expo SDK 57                  |
 | Navigation        | Expo Router (file-based)                    |
 | Gestures          | react-native-gesture-handler 2.28.0         |
 | Notifications     | expo-notifications (lokal, kein Push)       |
@@ -330,3 +330,5 @@ eas build --platform ios --profile preview   # TestFlight Build
 - Tägliche Zusammenfassung hat statischen Text (kein dynamischer Inhalt möglich ohne Background-Task/Server)
 - Für echten Push (statt nur lokalen Notifications) wäre ein Development Build statt Expo Go nötig
 - Dark/Hell-Modus-Umschaltung in "Darstellung" ist geplant, aber noch nicht umgesetzt (Dark Mode ist hardcoded)
+- Projekt auf **Expo SDK 57** angehoben (von 54) — Expo Go aktualisiert sich selbst und unterstützt jeweils nur die neuesten SDKs, daher regelmäßig mit `npx expo-doctor` prüfen
+- `react-hooks/set-state-in-effect` (neue, sehr strikte React-Compiler-Regel) ist in `eslint.config.js` auf `warn` statt `error` gesetzt — sie markiert auch das Standard-"Daten beim Mount laden"-Pattern fälschlich als Fehler

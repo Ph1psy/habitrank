@@ -28,8 +28,6 @@ export function useTodayHabits() {
   const [weekStart, setWeekStart] = useState(() => getWeekStart(today));
 
   const load = useCallback(async () => {
-    setLoading(true);
-
     const settings = await getSettings();
     const currentWeekStart = getWeekStart(today, settings.weekStartsOnMonday);
     setWeekStart(currentWeekStart);

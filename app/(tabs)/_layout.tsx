@@ -3,8 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Colors } from '../../src/constants/theme';
 
-type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
-
 export default function TabLayout() {
   return (
     <Tabs
@@ -23,7 +21,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Heute',
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="today-outline" size={size} color={color} />
           ),
         }}
@@ -32,7 +30,7 @@ export default function TabLayout() {
         name="stats"
         options={{
           title: 'Statistik',
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="bar-chart-outline" size={size} color={color} />
           ),
         }}
@@ -41,7 +39,7 @@ export default function TabLayout() {
         name="rank"
         options={{
           title: 'Rang',
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="trophy-outline" size={size} color={color} />
           ),
         }}
@@ -50,7 +48,7 @@ export default function TabLayout() {
         name="settings"
         options={{
           title: 'Einstellungen',
-          tabBarIcon: ({ color, size }: { color: string; size: number }) => (
+          tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}

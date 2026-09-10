@@ -15,7 +15,6 @@ export function useRank() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    setLoading(true);
     const rpState = await getCurrentRPState();
     const rank = getRankForRP(rpState.currentRP);
 

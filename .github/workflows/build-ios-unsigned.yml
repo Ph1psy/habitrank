@@ -1,0 +1,58 @@
+name: Build unsigned iOS IPA
+
+# Manuell auslösbar über den "Run workflow" Button im Actions-Tab auf GitHub.
+# Baut eine UNSIGNIERTE .ipa (macOS-Runner, öffentliches Repo = kostenlos).
+# Signieren passiert danach lokal mit AltServer + kostenloser Apple-ID beim Sideload.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Abhängigkeiten installieren
+        run: npm install --legacy-peer-deps
+
+      - name: Natives iOS-Projekt generieren
+        run: npx expo prebuild --platform ios --clean --non-interactive
+
+      - name: CocoaPods installieren
+        run: npx pod-install
+
+      - name: Xcode-Projekt ohne Signierung bauen
+        run: |
+          WORKSPACE=$(ls -d ios/*.xcworkspace | head -n 1)
+          SCHEME=$(xcodebuild -list -workspace "$WORKSPACE" -json | jq -r '.workspace.schemes[0]')
+          echo "Workspace: $WORKSPACE"
+          echo "Scheme: $SCHEME"
+          echo "SCHEME=$SCHEME" >> "$GITHUB_ENV"
+
+          xcodebuild \
+            -workspace "$WORKSPACE" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Unsignierte .ipa packen
+        run: |
+          mkdir -p Payload
+          cp -r "build/Build/Products/Release-iphoneos/${SCHEME}.app" "Payload/"
+          zip -r "${SCHEME}-unsigned.ipa" Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: habitrank-unsigned-ipa
+          path: '*.ipa'
