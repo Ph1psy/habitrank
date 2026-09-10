@@ -30,7 +30,10 @@ jobs:
       - name: Xcode-Projekt ohne Signierung bauen
         run: |
           WORKSPACE=$(ls -d ios/*.xcworkspace | head -n 1)
-          SCHEME=$(xcodebuild -list -workspace "$WORKSPACE" -json | jq -r '.workspace.schemes[0]')
+          # Das App-Schema heißt wie das .xcodeproj (nicht "Pods.xcodeproj") —
+          # xcodebuild -list listet sonst auch interne Pod-Schemas (z.B. "EXApplication")
+          # und die Reihenfolge ist nicht garantiert die App selbst.
+          SCHEME=$(basename "$(ls -d ios/*.xcodeproj | grep -v '/Pods\.xcodeproj$' | head -n 1)" .xcodeproj)
           echo "Workspace: $WORKSPACE"
           echo "Scheme: $SCHEME"
           echo "SCHEME=$SCHEME" >> "$GITHUB_ENV"
@@ -48,8 +51,17 @@ jobs:
 
       - name: Unsignierte .ipa packen
         run: |
+          echo "Inhalt von build/Build/Products/Release-iphoneos:"
+          ls -la "build/Build/Products/Release-iphoneos" || true
+
+          APP_PATH=$(find "build/Build/Products/Release-iphoneos" -maxdepth 1 -name "*.app" | head -n 1)
+          if [ -z "$APP_PATH" ]; then
+            echo "Keine .app gefunden — Build ist wahrscheinlich fehlgeschlagen."
+            exit 1
+          fi
+
           mkdir -p Payload
-          cp -r "build/Build/Products/Release-iphoneos/${SCHEME}.app" "Payload/"
+          cp -r "$APP_PATH" "Payload/"
           zip -r "${SCHEME}-unsigned.ipa" Payload
 
       - uses: actions/upload-artifact@v4
